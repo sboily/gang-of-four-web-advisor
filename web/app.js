@@ -186,6 +186,23 @@ function clearHand() {
 }
 
 /**
+ * Generate a random hand (16 cards)
+ */
+function randomHand() {
+  // Get available cards (not in trick)
+  const available = ALL_CARDS.filter(c => !trickCards.some(t => t.id === c.id));
+
+  // Shuffle
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+
+  // Take 16 cards (standard hand size)
+  handCards = shuffled.slice(0, 16);
+
+  updateDisplays();
+  renderCardPicker();
+}
+
+/**
  * Clear trick selection
  */
 function clearTrick() {
