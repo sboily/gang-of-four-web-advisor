@@ -2,6 +2,8 @@
 
 A browser-based AI advisor for the Gang of Four card game. Uses a neural network trained via imitation learning to suggest optimal plays.
 
+**[Try it live](https://sboily.github.io/gang-of-four-web-advisor/)**
+
 ![Screenshot](screenshot.png)
 
 ## Features
