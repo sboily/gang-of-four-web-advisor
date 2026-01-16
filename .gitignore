@@ -1,0 +1,30 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Model cache and external data (keep embedded model)
+web/model/.cache/
+web/model/*.onnx.data
+web/model/neural_v3.onnx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Temp
+*.tmp
+*.log
+
+# Python scripts (not needed for web app)
+gang_advisor.py
+model/

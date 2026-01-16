@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gang of Four AI Advisor</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --card-bg: #16213e;
+      --accent: #e94560;
+      --text: #eee;
+      --text-muted: #888;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --multi: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 1.6rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+    }
+
+    .status.loading { color: var(--yellow); }
+    .status.ready { color: var(--green); }
+    .status.error { color: var(--red); }
+
+    .section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .section-info {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .selected-cards {
+      min-height: 50px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .selected-cards:empty::before {
+      content: 'Click cards below to select...';
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .selected-cards .card {
+      cursor: pointer;
+    }
+
+    .selected-cards .card:hover {
+      opacity: 0.7;
+      transform: scale(0.95);
+    }
+
+    .clear-btn {
+      background: transparent;
+      border: 1px solid var(--text-muted);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .clear-btn:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .card-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .card {
+      width: 42px;
+      height: 60px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 2px solid transparent;
+      user-select: none;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .card.selected {
+      border-color: white;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+
+    .card.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .card.green {
+      background: linear-gradient(135deg, #166534, #22c55e);
+      color: white;
+    }
+
+    .card.yellow {
+      background: linear-gradient(135deg, #a16207, #eab308);
+      color: white;
+    }
+
+    .card.red {
+      background: linear-gradient(135deg, #991b1b, #ef4444);
+      color: white;
+    }
+
+    .card.multi {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+    }
+
+    .card.special {
+      font-size: 0.55rem;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .card .rank {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .card .suit {
+      font-size: 0.6rem;
+      opacity: 0.8;
+    }
+
+    .divider {
+      grid-column: 1 / -1;
+      height: 1px;
+      background: var(--text-muted);
+      opacity: 0.2;
+      margin: 5px 0;
+    }
+
+    button.analyze {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button.analyze:hover {
+      opacity: 0.9;
+    }
+
+    button.analyze:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .result {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .result.visible {
+      display: block;
+    }
+
+    .recommendation {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #1e3a5f, #0f2942);
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    .recommendation-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .recommendation-cards {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .recommendation-cards .card {
+      width: 45px;
+      height: 65px;
+      cursor: default;
+    }
+
+    .recommendation-cards .card:hover {
+      transform: none;
+    }
+
+    .pass-text {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--text-muted);
+    }
+
+    .declare-warning {
+      background: var(--yellow);
+      color: #000;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      margin-top: 12px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .options-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .option.best {
+      border: 2px solid var(--green);
+    }
+
+    .option-cards {
+      display: flex;
+      gap: 4px;
+    }
+
+    .option-cards .card {
+      width: 30px;
+      height: 42px;
+      font-size: 0.7rem;
+      cursor: default;
+    }
+
+    .option-cards .card:hover {
+      transform: none;
+    }
+
+    .option-cards .card .rank {
+      font-size: 0.85rem;
+    }
+
+    .option-prob {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .option.best .option-prob {
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      background: var(--bg);
+      border: 2px solid transparent;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .mode-btn:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gang of Four AI</h1>
+    <p class="subtitle">Click cards to select - Runs 100% in your browser</p>
+
+    <div id="status" class="status loading">Loading model...</div>
+
+    <!-- Mode Toggle -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-hand" onclick="setMode('hand')">Select Your Hand</button>
+      <button class="mode-btn" id="mode-trick" onclick="setMode('trick')">Cards to Beat</button>
+    </div>
+
+    <!-- Hand Section -->
+    <div class="section" id="hand-section">
+      <div class="section-header">
+        <span class="section-title">Your Hand</span>
+        <div>
+          <span class="section-info" id="hand-count">0 cards</span>
+          <button class="clear-btn" onclick="clearHand()">Clear</button>
+        </div>
+      </div>
+      <div class="selected-cards" id="hand-display"></div>
+    </div>
+
+    <!-- Trick Section -->
+    <div class="section" id="trick-section" style="opacity: 0.6;">
+      <div class="section-header">
+        <span class="section-title">Cards to Beat</span>
+        <div>
+          <span class="section-info" id="trick-count">Leading (empty)</span>
+          <button class="clear-btn" onclick="clearTrick()">Clear</button>
+        </div>
+      </div>
+      <div class="selected-cards" id="trick-display"></div>
+    </div>
+
+    <!-- Card Picker -->
+    <div class="section">
+      <div class="card-grid" id="card-picker"></div>
+    </div>
+
+    <button class="analyze" id="analyze" onclick="analyze()" disabled>Analyze</button>
+
+    <div id="result" class="result">
+      <div class="recommendation">
+        <div class="recommendation-label">AI Recommends</div>
+        <div class="recommendation-cards" id="recommendation-cards"></div>
+        <div id="declare-warning" class="declare-warning" style="display: none;">
+          Declare "Carte!" (last card)
+        </div>
+      </div>
+
+      <div class="options-title">All Options (sorted by AI preference)</div>
+      <div id="options"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/ort.min.js"></script>
+  <script src="encoder.js"></script>
+  <script src="rules.js"></script>
+  <script>
+    let session = null;
+
+    // Get encoder from global
+    const GF = window.GangOfFour || {};
+    const Card = GF.Card;
+    const GameEncoder = GF.GameEncoder;
+    const getValidPlaysForHand = GF.getValidPlaysForHand;
+    const decodeAction = GF.decodeAction;
+    const formatPlay = GF.formatPlay;
+    const softmax = GF.softmax;
+    const INPUT_DIM = GF.INPUT_DIM || 328;
+    const MAX_ACTIONS = GF.MAX_ACTIONS || 40;
+    const ACTION_MASK_OFFSET = GF.ACTION_MASK_OFFSET || 256;
+
+    const encoder = GameEncoder ? new GameEncoder() : null;
+    console.log('Encoder loaded:', !!encoder);
+
+    // State
+    let currentMode = 'hand';
+    let handCards = [];
+    let trickCards = [];
+
+    // All available cards in the deck
+    const ALL_CARDS = [];
+
+    // Generate all cards
+    function initCards() {
+      // Numbers 1-10 in each color (2 copies each)
+      for (let rank = 1; rank <= 10; rank++) {
+        for (const color of ['G', 'Y', 'R']) {
+          ALL_CARDS.push({ id: `${rank}${color}-1`, notation: `${rank}${color}`, rank, color, copy: 1 });
+          ALL_CARDS.push({ id: `${rank}${color}-2`, notation: `${rank}${color}`, rank, color, copy: 2 });
+        }
+      }
+      // Special cards
+      ALL_CARDS.push({ id: '1M', notation: '1M', rank: 1, color: 'M', special: true, label: '1 Multi' });
+      ALL_CARDS.push({ id: 'PG', notation: 'PhoenixG', rank: 11, color: 'G', special: true, label: 'Ph G' });
+      ALL_CARDS.push({ id: 'PY', notation: 'PhoenixY', rank: 11, color: 'Y', special: true, label: 'Ph Y' });
+      ALL_CARDS.push({ id: 'D', notation: 'Dragon', rank: 12, color: 'R', special: true, label: 'D' });
+    }
+
+    function getColorClass(color) {
+      if (color === 'G') return 'green';
+      if (color === 'Y') return 'yellow';
+      if (color === 'R') return 'red';
+      if (color === 'M') return 'multi';
+      return 'special';
+    }
+
+    function createCardElement(cardData, small = false) {
+      const div = document.createElement('div');
+      div.className = `card ${getColorClass(cardData.color)}${cardData.special ? ' special' : ''}`;
+      div.dataset.id = cardData.id;
+      div.dataset.notation = cardData.notation;
+
+      if (cardData.label) {
+        div.innerHTML = `<span class="rank">${cardData.label}</span>`;
+      } else if (cardData.color === 'M') {
+        div.innerHTML = `<span class="rank">1</span><span class="suit">Multi</span>`;
+      } else {
+        div.innerHTML = `<span class="rank">${cardData.rank}</span><span class="suit">${cardData.color}</span>`;
+      }
+
+      return div;
+    }
+
+    function renderCardPicker() {
+      const picker = document.getElementById('card-picker');
+      picker.innerHTML = '';
+
+      // Group by rank
+      let currentRank = 0;
+
+      for (const cardData of ALL_CARDS) {
+        // Add divider between ranks (for numbers)
+        if (!cardData.special && cardData.rank !== currentRank && cardData.copy === 1) {
+          if (currentRank > 0 && cardData.rank > 1) {
+            // const divider = document.createElement('div');
+            // divider.className = 'divider';
+            // picker.appendChild(divider);
+          }
+          currentRank = cardData.rank;
+        }
+
+        const cardEl = createCardElement(cardData);
+
+        // Check if already selected
+        const inHand = handCards.some(c => c.id === cardData.id);
+        const inTrick = trickCards.some(c => c.id === cardData.id);
+
+        if (inHand || inTrick) {
+          cardEl.classList.add('selected');
+          if ((currentMode === 'hand' && inTrick) || (currentMode === 'trick' && inHand)) {
+            cardEl.classList.add('disabled');
+          }
+        }
+
+        cardEl.addEventListener('click', () => toggleCard(cardData));
+        picker.appendChild(cardEl);
+      }
+    }
+
+    function toggleCard(cardData) {
+      const cards = currentMode === 'hand' ? handCards : trickCards;
+      const otherCards = currentMode === 'hand' ? trickCards : handCards;
+
+      // Check if in other selection
+      if (otherCards.some(c => c.id === cardData.id)) {
+        return; // Can't select same card in both
+      }
+
+      const idx = cards.findIndex(c => c.id === cardData.id);
+      if (idx >= 0) {
+        cards.splice(idx, 1);
+      } else {
+        cards.push(cardData);
+      }
+
+      updateDisplays();
+      renderCardPicker();
+    }
+
+    function updateDisplays() {
+      // Hand display
+      const handDisplay = document.getElementById('hand-display');
+      handDisplay.innerHTML = '';
+      for (const cardData of handCards) {
+        const cardEl = createCardElement(cardData);
+        cardEl.addEventListener('click', () => {
+          const idx = handCards.findIndex(c => c.id === cardData.id);
+          if (idx >= 0) handCards.splice(idx, 1);
+          updateDisplays();
+          renderCardPicker();
+        });
+        handDisplay.appendChild(cardEl);
+      }
+      document.getElementById('hand-count').textContent = `${handCards.length} cards`;
+
+      // Trick display
+      const trickDisplay = document.getElementById('trick-display');
+      trickDisplay.innerHTML = '';
+      for (const cardData of trickCards) {
+        const cardEl = createCardElement(cardData);
+        cardEl.addEventListener('click', () => {
+          const idx = trickCards.findIndex(c => c.id === cardData.id);
+          if (idx >= 0) trickCards.splice(idx, 1);
+          updateDisplays();
+          renderCardPicker();
+        });
+        trickDisplay.appendChild(cardEl);
+      }
+      document.getElementById('trick-count').textContent = trickCards.length ? `${trickCards.length} cards` : 'Leading (empty)';
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('mode-hand').classList.toggle('active', mode === 'hand');
+      document.getElementById('mode-trick').classList.toggle('active', mode === 'trick');
+      document.getElementById('hand-section').style.opacity = mode === 'hand' ? '1' : '0.6';
+      document.getElementById('trick-section').style.opacity = mode === 'trick' ? '1' : '0.6';
+      renderCardPicker();
+    }
+
+    function clearHand() {
+      handCards = [];
+      updateDisplays();
+      renderCardPicker();
+    }
+
+    function clearTrick() {
+      trickCards = [];
+      updateDisplays();
+      renderCardPicker();
+    }
+
+    function renderCardsInElement(element, cards, showPass = false) {
+      element.innerHTML = '';
+      if (!cards || cards.length === 0) {
+        if (showPass) {
+          element.innerHTML = '<span class="pass-text">PASS</span>';
+        }
+        return;
+      }
+      for (const cardData of cards) {
+        const cardEl = createCardElement(cardData);
+        element.appendChild(cardEl);
+      }
+    }
+
+    async function loadModel() {
+      const statusEl = document.getElementById('status');
+      const analyzeBtn = document.getElementById('analyze');
+
+      try {
+        statusEl.textContent = 'Loading ONNX Runtime...';
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/';
+
+        statusEl.textContent = 'Loading model (3.8 MB)...';
+
+        // Load model with embedded weights
+        session = await ort.InferenceSession.create('./model/neural_v3_embedded.onnx', {
+          executionProviders: ['wasm']
+        });
+
+        statusEl.textContent = 'Ready! Select your cards below.';
+        statusEl.className = 'status ready';
+        analyzeBtn.disabled = false;
+
+      } catch (err) {
+        console.error('Failed to load model:', err);
+        statusEl.textContent = `Error: ${String(err)}`;
+        statusEl.className = 'status error';
+      }
+    }
+
+    async function analyze() {
+      if (handCards.length === 0) {
+        alert('Please select at least one card for your hand');
+        return;
+      }
+
+      const resultEl = document.getElementById('result');
+      const recCardsEl = document.getElementById('recommendation-cards');
+      const declareEl = document.getElementById('declare-warning');
+      const optionsEl = document.getElementById('options');
+
+      // Parse cards
+      const hand = handCards.map(c => Card.parse(c.notation));
+      const trickToBeat = trickCards.length > 0 ? trickCards.map(c => Card.parse(c.notation)) : null;
+
+      // Generate valid plays using complete rules
+      const validPlays = window.GangOfFourRules.getValidPlays(hand, trickToBeat);
+
+      // Check if only PASS is available (when following)
+      const hasOnlyPass = validPlays.length === 1 && validPlays[0].length === 0;
+      if (validPlays.length === 0 || hasOnlyPass) {
+        renderCardsInElement(recCardsEl, null, true);
+        declareEl.style.display = 'none';
+        optionsEl.innerHTML = '<div class="option"><span>No valid plays - must PASS</span></div>';
+        resultEl.classList.add('visible');
+        return;
+      }
+
+      // Encode state
+      const { state, orderedPlays } = encoder.encodeSimple(
+        hand,
+        validPlays,
+        !trickToBeat || trickToBeat.length === 0,
+        trickToBeat
+      );
+
+      // Prepare tensors
+      const stateTensor = new ort.Tensor('float32', state, [1, INPUT_DIM]);
+      const maskData = state.slice(ACTION_MASK_OFFSET, ACTION_MASK_OFFSET + MAX_ACTIONS);
+      const maskTensor = new ort.Tensor('float32', maskData, [1, MAX_ACTIONS]);
+
+      try {
+        const results = await session.run({
+          state: stateTensor,
+          action_mask: maskTensor
+        });
+
+        const logits = Array.from(results.action_logits.data);
+        const declareProb = results.declare_prob.data[0];
+
+        // Find best action
+        let bestIdx = 0;
+        let bestLogit = logits[0];
+        for (let i = 1; i < orderedPlays.length; i++) {
+          if (logits[i] > bestLogit) {
+            bestLogit = logits[i];
+            bestIdx = i;
+          }
+        }
+
+        const bestPlay = decodeAction(bestIdx, orderedPlays);
+
+        // Convert to card data for display
+        const bestPlayData = bestPlay ? bestPlay.map(card => {
+          const notation = card.toString();
+          return handCards.find(c => c.notation === notation) || { notation, rank: card.rank, color: notation.slice(-1) };
+        }) : null;
+
+        renderCardsInElement(recCardsEl, bestPlayData, true);
+        declareEl.style.display = declareProb > 0.5 ? 'block' : 'none';
+
+        // Calculate probabilities
+        const probs = softmax(logits.slice(0, orderedPlays.length));
+
+        // Sort by probability
+        const playsWithProbs = orderedPlays.map((play, i) => ({
+          play,
+          prob: probs[i],
+          idx: i
+        }));
+        playsWithProbs.sort((a, b) => b.prob - a.prob);
+
+        // Render options
+        optionsEl.innerHTML = '';
+        for (const { play, prob, idx } of playsWithProbs.slice(0, 8)) {
+          const optionDiv = document.createElement('div');
+          optionDiv.className = `option${idx === bestIdx ? ' best' : ''}`;
+
+          const cardsDiv = document.createElement('div');
+          cardsDiv.className = 'option-cards';
+
+          if (!play || play.length === 0) {
+            cardsDiv.innerHTML = '<span style="color: var(--text-muted);">PASS</span>';
+          } else {
+            for (const card of play) {
+              const notation = card.toString();
+              const cardData = handCards.find(c => c.notation === notation) || { notation, rank: card.rank, color: notation.slice(-1) };
+              cardsDiv.appendChild(createCardElement(cardData));
+            }
+          }
+
+          const probSpan = document.createElement('span');
+          probSpan.className = 'option-prob';
+          probSpan.textContent = `${(prob * 100).toFixed(1)}%`;
+
+          optionDiv.appendChild(cardsDiv);
+          optionDiv.appendChild(probSpan);
+          optionsEl.appendChild(optionDiv);
+        }
+
+        resultEl.classList.add('visible');
+
+      } catch (err) {
+        console.error('Inference error:', err);
+        alert(`Error running model: ${err.message}`);
+      }
+    }
+
+    // Initialize
+    console.log('Initializing app...');
+    initCards();
+    console.log('Cards initialized:', ALL_CARDS.length);
+    renderCardPicker();
+    console.log('Card picker rendered');
+    loadModel();
+  </script>
+</body>
+</html>
